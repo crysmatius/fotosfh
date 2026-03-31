@@ -1,12 +1,12 @@
 [
   {
-    "code": "250101-PRUEBA",
-    "supplier": "250101-PRUEBA",
-    "desc": "250101-PRUEBA",
-    "filename": "250101-PRUEBA.jpeg",
+    "code": "250101",
+    "supplier": "250101",
+    "desc": "PRUEBA",
+    "filename": "250101_PRUEBA.jpeg",
     "url": "https://lh3.googleusercontent.com/d/1A737f99psZiRIGxC5X-DaIthNjD2VTEW=w800",
     "driveId": "1A737f99psZiRIGxC5X-DaIthNjD2VTEW",
-    "updatedAt": "2026-03-31T21:28:29.434Z"
+    "updatedAt": "2026-03-31T21:35:34.254Z"
   },
   {
     "code": "250125-PRUEBA",
@@ -15,6 +15,6 @@
     "filename": "250125-PRUEBA.jpeg",
     "url": "https://lh3.googleusercontent.com/d/1_4Gjfyf4asoDrDqinlMOEyQuGis39HOe=w800",
     "driveId": "1_4Gjfyf4asoDrDqinlMOEyQuGis39HOe",
-    "updatedAt": "2026-03-31T21:28:30.276Z"
+    "updatedAt": "2026-03-31T21:35:34.853Z"
   }
 ]
