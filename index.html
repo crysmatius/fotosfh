@@ -144,7 +144,7 @@ function doSearch() {
            (p.supplier && p.supplier.toUpperCase().indexOf(query) !== -1);
   });
   var base = window.location.pathname.replace(/\/[^\/]*$/, '/');
-  history.pushState({}, '', base + query);
+  history.pushState({}, '', base + '?code=' + encodeURIComponent(query));
   renderResults(matches, query);
 }
 
