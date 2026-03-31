@@ -1,32 +1,32 @@
 [
   {
-    "code": "123_PRUEA",
-    "supplier": "123_PRUEA",
-    "desc": "123_pruea",
-    "filename": "123_pruea.jpg",
-    "folder": "",
+    "code": "123",
+    "supplier": "123",
+    "desc": "pruea",
+    "filename": "123-pruea.jpg",
+    "folder": "Pisos Flotantes",
     "url": "https://lh3.googleusercontent.com/d/1qUPrUtw7h36a5N3gLBXnRda3jBYY2Kfx=w1200",
     "driveId": "1qUPrUtw7h36a5N3gLBXnRda3jBYY2Kfx",
-    "updatedAt": "2026-03-31T21:40:22.359Z"
+    "updatedAt": "2026-03-31T21:44:01.216Z"
   },
   {
-    "code": "250125_PRUEBA",
-    "supplier": "250125_PRUEBA",
-    "desc": "250125_PRUEBA",
-    "filename": "250125_PRUEBA.jpeg",
-    "folder": "",
+    "code": "250125",
+    "supplier": "250125",
+    "desc": "PRUEBA",
+    "filename": "250125-PRUEBA.jpeg",
+    "folder": "Pisos Flotantes",
     "url": "https://lh3.googleusercontent.com/d/1_4Gjfyf4asoDrDqinlMOEyQuGis39HOe=w1200",
     "driveId": "1_4Gjfyf4asoDrDqinlMOEyQuGis39HOe",
-    "updatedAt": "2026-03-31T21:40:23.099Z"
+    "updatedAt": "2026-03-31T21:44:02.003Z"
   },
   {
-    "code": "250101_PRUEBA",
-    "supplier": "250101_PRUEBA",
-    "desc": "250101_PRUEBA",
-    "filename": "250101_PRUEBA.jpeg",
-    "folder": "",
+    "code": "250101",
+    "supplier": "250101",
+    "desc": "PRUEBA",
+    "filename": "250101-PRUEBA.jpeg",
+    "folder": "Cerámicas",
     "url": "https://lh3.googleusercontent.com/d/1A737f99psZiRIGxC5X-DaIthNjD2VTEW=w1200",
     "driveId": "1A737f99psZiRIGxC5X-DaIthNjD2VTEW",
-    "updatedAt": "2026-03-31T21:40:23.808Z"
+    "updatedAt": "2026-03-31T21:44:03.070Z"
   }
 ]
