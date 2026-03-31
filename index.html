@@ -110,7 +110,7 @@ main{flex:1;overflow-y:auto;padding:20px 16px 32px;}
   <div id="results">
     <div class="initial-state">
       <div class="emoji">🔍</div>
-      <p>Ingresa un código de proveedor arriba<br>para ver las fotografías asociadas.</p>
+      <p id="initial-msg">Cargando fotos...</p>
     </div>
   </div>
 </main>
@@ -136,108 +136,147 @@ main{flex:1;overflow-y:auto;padding:20px 16px 32px;}
 <div id="toast"></div>
 
 <script>
-let photosDB = [];
+var photosDB = [];
 
-async function loadPhotos() {
-  try {
-    const res = await fetch('photos.json?nocache=' + Date.now());
-    if (res.ok) photosDB = await res.json();
-  } catch(e) { photosDB = []; }
+function loadPhotos() {
+  return fetch('photos.json?v=' + Date.now())
+    .then(function(r) { return r.ok ? r.json() : []; })
+    .then(function(data) {
+      photosDB = data;
+      var msg = document.getElementById('initial-msg');
+      if (msg) {
+        if (photosDB.length > 0) {
+          msg.innerHTML = photosDB.length + ' foto' + (photosDB.length !== 1 ? 's' : '') + ' cargada' + (photosDB.length !== 1 ? 's' : '') + '.<br>Ingresa un código para buscar.';
+        } else {
+          msg.innerHTML = 'Aún no hay fotos.<br>Ejecuta el script de sincronización.';
+        }
+      }
+    })
+    .catch(function() { photosDB = []; });
 }
 
-(async function init() {
-  await loadPhotos();
-  const code = getCodeFromURL();
-  if (code) {
-    document.getElementById('search-input').value = code;
-    doSearch();
-  }
-})();
+function init() {
+  loadPhotos().then(function() {
+    var code = getCodeFromURL();
+    if (code) {
+      document.getElementById('search-input').value = code;
+      doSearch();
+    }
+  });
+}
+init();
 
 function getCodeFromURL() {
-  const path = window.location.pathname.replace(/^\/[^\/]+\//, '/');
-  const slug = path.replace(/^\//, '').replace(/\/$/, '');
+  var path = window.location.pathname.replace(/^\/[^\/]+\//, '/');
+  var slug = path.replace(/^\//, '').replace(/\/$/, '');
   if (slug && /^[\w-]+$/.test(slug) && slug !== 'index.html') return slug;
-  const params = new URLSearchParams(window.location.search);
+  var params = new URLSearchParams(window.location.search);
   if (params.get('code')) return params.get('code');
   return window.location.hash.replace('#', '') || null;
 }
 
 function doSearch() {
-  const query = document.getElementById('search-input').value.trim().toUpperCase();
+  var query = document.getElementById('search-input').value.trim().toUpperCase();
   if (!query) { showToast('Ingresa un código de proveedor'); return; }
-  const base = window.location.pathname.replace(/\/[^\/]*$/, '/');
+  var base = window.location.pathname.replace(/\/[^\/]*$/, '/');
   history.pushState({}, '', base + query);
-  const matches = photosDB.filter(p =>
-    p.code.toUpperCase().includes(query) ||
-    (p.supplier && p.supplier.toUpperCase().includes(query))
-  );
+  var matches = photosDB.filter(function(p) {
+    return p.code.toUpperCase().indexOf(query) !== -1 ||
+           (p.supplier && p.supplier.toUpperCase().indexOf(query) !== -1);
+  });
   renderResults(matches, query);
 }
 
 function renderResults(items, query) {
-  const el = document.getElementById('results');
+  var el = document.getElementById('results');
   if (items.length === 0) {
-    el.innerHTML = '<div class="empty-state"><div class="emoji">📭</div><p>No se encontraron fotos para <strong>' + query + '</strong>.<br>Sincroniza con Drive o verifica el código.</p></div>';
+    el.innerHTML = '<div class="empty-state"><div class="emoji">📭</div><p>No se encontraron fotos para <strong>' + query + '</strong>.</p></div>';
     return;
   }
-  const baseURL = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
-  const itemsJson = JSON.stringify(items).replace(/"/g, '&quot;');
-  el.innerHTML = '<div class="result-header">' + items.length + ' foto' + (items.length !== 1 ? 's' : '') + ' encontrada' + (items.length !== 1 ? 's' : '') + '</div>' +
-    '<div class="photo-grid">' +
-    items.map((p, i) =>
-      '<div class="photo-card" onclick="openModal(' + i + ',' + itemsJson + ')">' +
-      (p.url ? '<img src="' + p.url + '" alt="' + p.desc + '" loading="lazy" onerror="this.outerHTML='<div class=img-placeholder>🖼️</div>'">' : '<div class="img-placeholder">🖼️</div>') +
-      '<div class="photo-info">' +
-      '<div class="photo-code">' + p.code + '</div>' +
-      '<div class="photo-desc">' + p.desc + '</div>' +
-      '<div class="photo-meta">' + (p.filename || '') + '</div>' +
-      '</div>' +
-      '<button class="btn-report" onclick="event.stopPropagation();reportItem('' + p.code + '','' + p.desc.replace(/'/g, "\'") + '')">⚠️ Reportar Error</button>' +
-      '</div>'
-    ).join('') + '</div>';
+  var baseURL = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
+  var html = '<div class="result-header">' + items.length + ' foto' + (items.length !== 1 ? 's' : '') + ' encontrada' + (items.length !== 1 ? 's' : '') + '</div>';
+  html += '<div class="photo-grid">';
+  for (var i = 0; i < items.length; i++) {
+    var p = items[i];
+    var idx = i;
+    html += '<div class="photo-card" onclick="openModal(' + idx + ')">';
+    if (p.url) {
+      html += '<img src="' + p.url + '" alt="' + p.desc + '" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">';
+      html += '<div class="img-placeholder" style="display:none">🖼️</div>';
+    } else {
+      html += '<div class="img-placeholder">🖼️</div>';
+    }
+    html += '<div class="photo-info">';
+    html += '<div class="photo-code">' + p.code + '</div>';
+    html += '<div class="photo-desc">' + p.desc + '</div>';
+    html += '<div class="photo-meta">' + (p.filename || '') + '</div>';
+    html += '</div>';
+    html += '<button class="btn-report" onclick="event.stopPropagation();doReport(' + idx + ')">⚠️ Reportar Error</button>';
+    html += '</div>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
+  window._lastResults = items;
 }
 
-let currentItem = null;
-function openModal(idx, items) {
+var currentItem = null;
+function openModal(idx) {
+  var items = window._lastResults || [];
   currentItem = items[idx];
-  const p = currentItem;
-  const baseURL = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
+  var p = currentItem;
+  if (!p) return;
+  var baseURL = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
   document.getElementById('modal-title').textContent = p.code;
   document.getElementById('modal-code').textContent = 'Código: ' + p.code;
   document.getElementById('modal-desc').textContent = p.desc;
   document.getElementById('modal-meta').textContent = p.filename || '';
   document.getElementById('modal-url').textContent = baseURL + p.code;
-  document.getElementById('modal-img-wrap').innerHTML = p.url
-    ? '<img class="modal-img" src="' + p.url + '" alt="' + p.desc + '">'
-    : '<div class="modal-img-placeholder">🖼️</div>';
+  var wrap = document.getElementById('modal-img-wrap');
+  if (p.url) {
+    wrap.innerHTML = '<img class="modal-img" src="' + p.url + '" alt="' + p.desc + '">';
+  } else {
+    wrap.innerHTML = '<div class="modal-img-placeholder">🖼️</div>';
+  }
   document.getElementById('modal-overlay').classList.add('open');
 }
-function closeModal(e) { if (e.target === document.getElementById('modal-overlay')) closeModalDirect(); }
-function closeModalDirect() { document.getElementById('modal-overlay').classList.remove('open'); }
-function reportPhoto() { if (currentItem) reportItem(currentItem.code, currentItem.desc); }
 
+function doReport(idx) {
+  var items = window._lastResults || [];
+  var p = items[idx];
+  if (p) reportItem(p.code, p.desc);
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+function reportPhoto() {
+  if (currentItem) reportItem(currentItem.code, currentItem.desc);
+}
 function reportItem(code, desc) {
-  const subject = encodeURIComponent('Error en foto – Código ' + code);
-  const body = encodeURIComponent('Hola,\n\nSe reporta un error en la siguiente fotografía:\n\nCódigo: ' + code + '\nDescripción: ' + desc + '\n\nPor favor revisar y corregir.\n\nGracias.');
+  var subject = encodeURIComponent('Error en foto – Código ' + code);
+  var body = encodeURIComponent('Hola,\n\nSe reporta un error en la siguiente fotografía:\n\nCódigo: ' + code + '\nDescripción: ' + desc + '\n\nPor favor revisar y corregir.\n\nGracias.');
   window.location.href = 'mailto:christianr@fh.cl?subject=' + subject + '&body=' + body;
 }
 
-
-let toastTimer;
+var toastTimer;
 function showToast(msg) {
-  const t = document.getElementById('toast');
+  var t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+  toastTimer = setTimeout(function() { t.classList.remove('show'); }, 2800);
 }
 
-window.addEventListener('popstate', async () => {
-  const code = getCodeFromURL();
-  if (code) { document.getElementById('search-input').value = code; doSearch(); }
-  else {
-    document.getElementById('results').innerHTML = '<div class="initial-state"><div class="emoji">🔍</div><p>Ingresa un código de proveedor arriba<br>para ver las fotografías asociadas.</p></div>';
+window.addEventListener('popstate', function() {
+  var code = getCodeFromURL();
+  if (code) {
+    document.getElementById('search-input').value = code;
+    doSearch();
+  } else {
+    document.getElementById('results').innerHTML = '<div class="initial-state"><div class="emoji">🔍</div><p id="initial-msg">' + photosDB.length + ' fotos cargadas.<br>Ingresa un código para buscar.</p></div>';
   }
 });
 </script>
