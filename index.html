@@ -31,23 +31,9 @@ body{font-family:'Barlow',sans-serif;background:var(--white);color:var(--text);d
 /* MAIN */
 main{flex:1;overflow-y:auto;padding:20px 16px 32px;}
 
-/* SYNC */
-.sync-row{display:flex;justify-content:flex-end;margin-bottom:18px;}
-.btn-sync{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:10px;padding:10px 18px;font-family:'Barlow',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 3px 12px rgba(22,163,74,.25);transition:opacity .15s,transform .15s;}
-.btn-sync:hover{opacity:.88;transform:translateY(-1px);}
-.btn-sync.loading{opacity:.7;pointer-events:none;}
-.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg)}}
 
-/* STATUS */
-.status{width:100%;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:700;display:none;align-items:center;gap:10px;margin-bottom:14px;}
-.status.show{display:flex;}
-.st-ok{background:#e8ffe8;border:1px solid #44bb44;color:#226622;}
-.st-err{background:#ffe8e8;border:1px solid #ee4444;color:#882222;}
-.st-info{background:var(--brand-lt);border:1px solid var(--brand);color:var(--brand);}
-.st-load{background:var(--brand-lt);border:1px solid var(--brand);color:var(--brand);}
-.dot{width:8px;height:8px;min-width:8px;border-radius:50%;background:currentColor;animation:blink 1s ease-in-out infinite;}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+
 
 /* RESULTS */
 .result-header{color:var(--muted);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;}
@@ -119,19 +105,6 @@ main{flex:1;overflow-y:auto;padding:20px 16px 32px;}
 
 <!-- MAIN -->
 <main>
-  <!-- Sync -->
-  <div class="sync-row">
-    <button class="btn-sync" id="btn-sync" onclick="syncPhotos()">
-      <span id="sync-icon">🔄</span>
-      <span id="sync-label">Sincronizar con Drive</span>
-    </button>
-  </div>
-
-  <!-- Status -->
-  <div class="status st-info" id="status-bar">
-    <div class="dot"></div>
-    <span id="status-txt">Ingresa un código para buscar</span>
-  </div>
 
   <!-- Results -->
   <div id="results">
@@ -204,10 +177,6 @@ function doSearch() {
 
 function renderResults(items, query) {
   const el = document.getElementById('results');
-  const sb = document.getElementById('status-bar');
-  sb.className = 'status st-info show';
-  document.getElementById('status-txt').textContent = items.length + ' foto' + (items.length !== 1 ? 's' : '') + ' para: ' + query;
-
   if (items.length === 0) {
     el.innerHTML = '<div class="empty-state"><div class="emoji">📭</div><p>No se encontraron fotos para <strong>' + query + '</strong>.<br>Sincroniza con Drive o verifica el código.</p></div>';
     return;
@@ -254,22 +223,6 @@ function reportItem(code, desc) {
   window.location.href = 'mailto:christianr@fh.cl?subject=' + subject + '&body=' + body;
 }
 
-async function syncPhotos() {
-  const btn = document.getElementById('btn-sync');
-  document.getElementById('sync-icon').outerHTML = '<div class="spinner"></div>';
-  document.getElementById('sync-label').textContent = 'Sincronizando...';
-  btn.classList.add('loading');
-  await new Promise(r => setTimeout(r, 1200));
-  await loadPhotos();
-  document.querySelector('.spinner').outerHTML = '<span id="sync-icon">✅</span>';
-  document.getElementById('sync-label').textContent = photosDB.length + ' fotos cargadas';
-  btn.classList.remove('loading');
-  setTimeout(() => {
-    document.getElementById('sync-icon').outerHTML = '<span id="sync-icon">🔄</span>';
-    document.getElementById('sync-label').textContent = 'Sincronizar con Drive';
-  }, 3000);
-  showToast('Banco actualizado – ' + photosDB.length + ' fotos');
-}
 
 let toastTimer;
 function showToast(msg) {
@@ -285,7 +238,6 @@ window.addEventListener('popstate', async () => {
   if (code) { document.getElementById('search-input').value = code; doSearch(); }
   else {
     document.getElementById('results').innerHTML = '<div class="initial-state"><div class="emoji">🔍</div><p>Ingresa un código de proveedor arriba<br>para ver las fotografías asociadas.</p></div>';
-    document.getElementById('status-bar').className = 'status';
   }
 });
 </script>
