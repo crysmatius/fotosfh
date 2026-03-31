@@ -62,20 +62,11 @@ main{flex:1;overflow-y:auto;padding:20px 16px 32px;}
 .modal-header h3{color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
 .modal-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;}
 .modal-close:hover{background:rgba(255,255,255,.3);}
-.modal-img{width:100%;max-height:260px;object-fit:contain;background:#f0f2f8;display:block;}
-.modal-img-placeholder{width:100%;height:180px;background:linear-gradient(135deg,#eef0fc,#dde1f5);display:flex;align-items:center;justify-content:center;font-size:64px;}
-.modal-body{padding:18px 20px 20px;}
-.modal-code{color:var(--brand);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
-.modal-desc{color:var(--text);font-size:18px;font-weight:700;margin:5px 0 3px;}
-.modal-meta{color:var(--muted);font-size:12px;margin-bottom:14px;}
-.modal-url{background:#eef0fc;border-radius:8px;padding:9px 13px;font-size:12px;color:var(--brand);word-break:break-all;margin-bottom:14px;font-weight:600;}
-.btn-report-modal{width:100%;background:transparent;border:1.5px solid var(--accent);color:var(--accent);border-radius:10px;padding:11px 0;font-family:'Barlow',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:background .15s,color .15s;}
-.btn-report-modal:hover{background:var(--accent);color:#fff;}
-
-/* DEBUG */
-#debug-panel{margin:16px 0;background:#111;color:#0f0;border-radius:10px;padding:12px 14px;font-family:monospace;font-size:12px;line-height:1.6;}
-#debug-panel h4{color:#ff0;margin-bottom:6px;font-size:11px;letter-spacing:1px;text-transform:uppercase;}
-#debug-log div{border-bottom:1px solid #1a1a1a;padding:2px 0;}
+.modal-img{width:100%;max-height:420px;object-fit:contain;background:#f0f2f8;display:block;}
+.modal-img-placeholder{width:100%;height:280px;background:linear-gradient(135deg,#eef0fc,#dde1f5);display:flex;align-items:center;justify-content:center;font-size:64px;}
+.modal-body{padding:14px 18px 18px;}
+.modal-code{color:var(--brand);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
+.modal-desc{color:var(--text);font-size:18px;font-weight:700;line-height:1.3;}
 
 /* TOAST */
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);background:#0000a2;color:#fff;padding:11px 22px;border-radius:30px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;z-index:200;white-space:nowrap;}
@@ -111,17 +102,11 @@ main{flex:1;overflow-y:auto;padding:20px 16px 32px;}
 <!-- MAIN -->
 <main>
 
-  <!-- DEBUG PANEL -->
-  <div id="debug-panel">
-    <h4>🛠 Debug — qué está pasando</h4>
-    <div id="debug-log"></div>
-  </div>
-
   <!-- Results -->
   <div id="results">
     <div class="initial-state">
       <div class="emoji">🔍</div>
-      <p id="initial-msg">Cargando fotos...</p>
+      <p id="initial-msg">Cargando...</p>
     </div>
   </div>
 </main>
@@ -137,9 +122,6 @@ main{flex:1;overflow-y:auto;padding:20px 16px 32px;}
     <div class="modal-body">
       <div class="modal-code" id="modal-code"></div>
       <div class="modal-desc" id="modal-desc"></div>
-      <div class="modal-meta" id="modal-meta"></div>
-      <div class="modal-url" id="modal-url"></div>
-      <button class="btn-report-modal" onclick="reportPhoto()">⚠️ Reportar Error en esta Foto</button>
     </div>
   </div>
 </div>
@@ -149,32 +131,11 @@ main{flex:1;overflow-y:auto;padding:20px 16px 32px;}
 <script>
 var photosDB = [];
 
-// DEBUG: muestra mensajes en pantalla
-function dbg(msg) {
-  var el = document.getElementById('debug-log');
-  if (!el) return;
-  var line = document.createElement('div');
-  line.textContent = '▶ ' + msg;
-  el.appendChild(line);
-  console.log(msg);
-}
-
 function loadPhotos() {
-  dbg('Buscando photos.json...');
-  var url = 'photos.json?v=' + Date.now();
-  dbg('URL: ' + url);
-  return fetch(url)
-    .then(function(r) {
-      dbg('Respuesta HTTP: ' + r.status + ' ' + r.statusText);
-      if (!r.ok) { dbg('ERROR: no se pudo leer photos.json'); return []; }
-      return r.json();
-    })
+  return fetch('photos.json?v=' + Date.now())
+    .then(function(r) { return r.ok ? r.json() : []; })
     .then(function(data) {
       photosDB = data;
-      dbg('Fotos cargadas: ' + photosDB.length);
-      if (photosDB.length > 0) {
-        dbg('Primera foto: código=' + photosDB[0].code + ' url=' + photosDB[0].url);
-      }
       var msg = document.getElementById('initial-msg');
       if (msg) {
         if (photosDB.length > 0) {
@@ -184,24 +145,15 @@ function loadPhotos() {
         }
       }
     })
-    .catch(function(err) {
-      dbg('EXCEPCION: ' + err.message);
-      photosDB = [];
-    });
+    .catch(function() { photosDB = []; });
 }
 
 function init() {
-  dbg('Iniciando...');
-  dbg('URL actual: ' + window.location.href);
   loadPhotos().then(function() {
-    dbg('loadPhotos() completado');
     var code = getCodeFromURL();
     if (code) {
-      dbg('Código en URL: ' + code);
       document.getElementById('search-input').value = code;
       doSearch();
-    } else {
-      dbg('Sin código en URL, esperando búsqueda manual');
     }
   });
 }
@@ -218,14 +170,11 @@ function getCodeFromURL() {
 
 function doSearch() {
   var query = document.getElementById('search-input').value.trim().toUpperCase();
-  dbg('Buscando: "' + query + '"');
   if (!query) { showToast('Ingresa un código de proveedor'); return; }
-  dbg('Total en BD: ' + photosDB.length + ' fotos');
   var matches = photosDB.filter(function(p) {
     return p.code.toUpperCase().indexOf(query) !== -1 ||
            (p.supplier && p.supplier.toUpperCase().indexOf(query) !== -1);
   });
-  dbg('Coincidencias: ' + matches.length);
   var base = window.location.pathname.replace(/\/[^\/]*$/, '/');
   history.pushState({}, '', base + query);
   renderResults(matches, query);
@@ -238,7 +187,6 @@ function renderResults(items, query) {
     return;
   }
   window._lastResults = items;
-  var baseURL = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
   var html = '<div class="result-header">' + items.length + ' foto' + (items.length !== 1 ? 's' : '') + ' encontrada' + (items.length !== 1 ? 's' : '') + '</div>';
   html += '<div class="photo-grid">';
   for (var i = 0; i < items.length; i++) {
@@ -253,9 +201,7 @@ function renderResults(items, query) {
     html += '<div class="photo-info">';
     html += '<div class="photo-code">' + p.code + '</div>';
     html += '<div class="photo-desc">' + p.desc + '</div>';
-    html += '<div class="photo-meta">' + (p.filename || '') + '</div>';
     html += '</div>';
-    html += '<button class="btn-report" onclick="event.stopPropagation();doReport(' + i + ')">⚠️ Reportar Error</button>';
     html += '</div>';
   }
   html += '</div>';
@@ -268,12 +214,9 @@ function openModal(idx) {
   currentItem = items[idx];
   var p = currentItem;
   if (!p) return;
-  var baseURL = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
-  document.getElementById('modal-title').textContent = p.code;
+  document.getElementById('modal-title').textContent = p.desc;
   document.getElementById('modal-code').textContent = 'Código: ' + p.code;
   document.getElementById('modal-desc').textContent = p.desc;
-  document.getElementById('modal-meta').textContent = p.filename || '';
-  document.getElementById('modal-url').textContent = baseURL + p.code;
   var wrap = document.getElementById('modal-img-wrap');
   if (p.url) {
     wrap.innerHTML = '<img class="modal-img" src="' + p.url + '" alt="' + p.desc + '">';
@@ -283,25 +226,11 @@ function openModal(idx) {
   document.getElementById('modal-overlay').classList.add('open');
 }
 
-function doReport(idx) {
-  var items = window._lastResults || [];
-  var p = items[idx];
-  if (p) reportItem(p.code, p.desc);
-}
-
 function closeModal(e) {
   if (e.target === document.getElementById('modal-overlay')) closeModalDirect();
 }
 function closeModalDirect() {
   document.getElementById('modal-overlay').classList.remove('open');
-}
-function reportPhoto() {
-  if (currentItem) reportItem(currentItem.code, currentItem.desc);
-}
-function reportItem(code, desc) {
-  var subject = encodeURIComponent('Error en foto - Codigo ' + code);
-  var body = encodeURIComponent('Hola,\n\nError en foto:\nCodigo: ' + code + '\nDescripcion: ' + desc + '\n\nGracias.');
-  window.location.href = 'mailto:christianr@fh.cl?subject=' + subject + '&body=' + body;
 }
 
 var toastTimer;
@@ -319,7 +248,7 @@ window.addEventListener('popstate', function() {
     document.getElementById('search-input').value = code;
     doSearch();
   } else {
-    document.getElementById('results').innerHTML = '<div class="initial-state"><div class="emoji">🔍</div><p id="initial-msg">' + photosDB.length + ' fotos cargadas. Ingresa un codigo para buscar.</p></div>';
+    document.getElementById('results').innerHTML = '<div class="initial-state"><div class="emoji">🔍</div><p id="initial-msg">' + photosDB.length + ' fotos cargadas. Ingresa un código para buscar.</p></div>';
   }
 });
 </script>
