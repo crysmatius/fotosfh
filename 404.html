@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<script>
+  // Captura la URL actual y redirige al index con el código como parámetro
+  var path = window.location.pathname;
+  // Extrae el último segmento (ej: "250125" de "/fotosfh/250125")
+  var parts = path.split('/').filter(function(p){ return p.length > 0; });
+  var code = parts[parts.length - 1];
+  // Sube un nivel para llegar al index
+  var base = path.substring(0, path.lastIndexOf('/' + code));
+  if (!base) base = '/';
+  if (code && code !== 'index.html') {
+    window.location.replace(base + '/?code=' + encodeURIComponent(code));
+  } else {
+    window.location.replace(base + '/');
+  }
+</script>
+</head>
+<body></body>
+</html>
