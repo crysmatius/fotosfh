@@ -72,6 +72,11 @@ main{flex:1;overflow-y:auto;padding:20px 16px 32px;}
 .btn-report-modal{width:100%;background:transparent;border:1.5px solid var(--accent);color:var(--accent);border-radius:10px;padding:11px 0;font-family:'Barlow',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:background .15s,color .15s;}
 .btn-report-modal:hover{background:var(--accent);color:#fff;}
 
+/* DEBUG */
+#debug-panel{margin:16px 0;background:#111;color:#0f0;border-radius:10px;padding:12px 14px;font-family:monospace;font-size:12px;line-height:1.6;}
+#debug-panel h4{color:#ff0;margin-bottom:6px;font-size:11px;letter-spacing:1px;text-transform:uppercase;}
+#debug-log div{border-bottom:1px solid #1a1a1a;padding:2px 0;}
+
 /* TOAST */
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);background:#0000a2;color:#fff;padding:11px 22px;border-radius:30px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;z-index:200;white-space:nowrap;}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
@@ -106,6 +111,12 @@ main{flex:1;overflow-y:auto;padding:20px 16px 32px;}
 <!-- MAIN -->
 <main>
 
+  <!-- DEBUG PANEL -->
+  <div id="debug-panel">
+    <h4>🛠 Debug — qué está pasando</h4>
+    <div id="debug-log"></div>
+  </div>
+
   <!-- Results -->
   <div id="results">
     <div class="initial-state">
@@ -138,29 +149,59 @@ main{flex:1;overflow-y:auto;padding:20px 16px 32px;}
 <script>
 var photosDB = [];
 
+// DEBUG: muestra mensajes en pantalla
+function dbg(msg) {
+  var el = document.getElementById('debug-log');
+  if (!el) return;
+  var line = document.createElement('div');
+  line.textContent = '▶ ' + msg;
+  el.appendChild(line);
+  console.log(msg);
+}
+
 function loadPhotos() {
-  return fetch('photos.json?v=' + Date.now())
-    .then(function(r) { return r.ok ? r.json() : []; })
+  dbg('Buscando photos.json...');
+  var url = 'photos.json?v=' + Date.now();
+  dbg('URL: ' + url);
+  return fetch(url)
+    .then(function(r) {
+      dbg('Respuesta HTTP: ' + r.status + ' ' + r.statusText);
+      if (!r.ok) { dbg('ERROR: no se pudo leer photos.json'); return []; }
+      return r.json();
+    })
     .then(function(data) {
       photosDB = data;
+      dbg('Fotos cargadas: ' + photosDB.length);
+      if (photosDB.length > 0) {
+        dbg('Primera foto: código=' + photosDB[0].code + ' url=' + photosDB[0].url);
+      }
       var msg = document.getElementById('initial-msg');
       if (msg) {
         if (photosDB.length > 0) {
           msg.innerHTML = photosDB.length + ' foto' + (photosDB.length !== 1 ? 's' : '') + ' cargada' + (photosDB.length !== 1 ? 's' : '') + '.<br>Ingresa un código para buscar.';
         } else {
-          msg.innerHTML = 'Aún no hay fotos.<br>Ejecuta el script de sincronización.';
+          msg.innerHTML = 'Sin fotos. Ejecuta el script de sincronización.';
         }
       }
     })
-    .catch(function() { photosDB = []; });
+    .catch(function(err) {
+      dbg('EXCEPCION: ' + err.message);
+      photosDB = [];
+    });
 }
 
 function init() {
+  dbg('Iniciando...');
+  dbg('URL actual: ' + window.location.href);
   loadPhotos().then(function() {
+    dbg('loadPhotos() completado');
     var code = getCodeFromURL();
     if (code) {
+      dbg('Código en URL: ' + code);
       document.getElementById('search-input').value = code;
       doSearch();
+    } else {
+      dbg('Sin código en URL, esperando búsqueda manual');
     }
   });
 }
@@ -177,13 +218,16 @@ function getCodeFromURL() {
 
 function doSearch() {
   var query = document.getElementById('search-input').value.trim().toUpperCase();
+  dbg('Buscando: "' + query + '"');
   if (!query) { showToast('Ingresa un código de proveedor'); return; }
-  var base = window.location.pathname.replace(/\/[^\/]*$/, '/');
-  history.pushState({}, '', base + query);
+  dbg('Total en BD: ' + photosDB.length + ' fotos');
   var matches = photosDB.filter(function(p) {
     return p.code.toUpperCase().indexOf(query) !== -1 ||
            (p.supplier && p.supplier.toUpperCase().indexOf(query) !== -1);
   });
+  dbg('Coincidencias: ' + matches.length);
+  var base = window.location.pathname.replace(/\/[^\/]*$/, '/');
+  history.pushState({}, '', base + query);
   renderResults(matches, query);
 }
 
@@ -193,15 +237,15 @@ function renderResults(items, query) {
     el.innerHTML = '<div class="empty-state"><div class="emoji">📭</div><p>No se encontraron fotos para <strong>' + query + '</strong>.</p></div>';
     return;
   }
+  window._lastResults = items;
   var baseURL = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
   var html = '<div class="result-header">' + items.length + ' foto' + (items.length !== 1 ? 's' : '') + ' encontrada' + (items.length !== 1 ? 's' : '') + '</div>';
   html += '<div class="photo-grid">';
   for (var i = 0; i < items.length; i++) {
     var p = items[i];
-    var idx = i;
-    html += '<div class="photo-card" onclick="openModal(' + idx + ')">';
+    html += '<div class="photo-card" onclick="openModal(' + i + ')">';
     if (p.url) {
-      html += '<img src="' + p.url + '" alt="' + p.desc + '" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">';
+      html += '<img src="' + p.url + '" alt="' + p.desc + '" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
       html += '<div class="img-placeholder" style="display:none">🖼️</div>';
     } else {
       html += '<div class="img-placeholder">🖼️</div>';
@@ -211,12 +255,11 @@ function renderResults(items, query) {
     html += '<div class="photo-desc">' + p.desc + '</div>';
     html += '<div class="photo-meta">' + (p.filename || '') + '</div>';
     html += '</div>';
-    html += '<button class="btn-report" onclick="event.stopPropagation();doReport(' + idx + ')">⚠️ Reportar Error</button>';
+    html += '<button class="btn-report" onclick="event.stopPropagation();doReport(' + i + ')">⚠️ Reportar Error</button>';
     html += '</div>';
   }
   html += '</div>';
   el.innerHTML = html;
-  window._lastResults = items;
 }
 
 var currentItem = null;
@@ -256,8 +299,8 @@ function reportPhoto() {
   if (currentItem) reportItem(currentItem.code, currentItem.desc);
 }
 function reportItem(code, desc) {
-  var subject = encodeURIComponent('Error en foto – Código ' + code);
-  var body = encodeURIComponent('Hola,\n\nSe reporta un error en la siguiente fotografía:\n\nCódigo: ' + code + '\nDescripción: ' + desc + '\n\nPor favor revisar y corregir.\n\nGracias.');
+  var subject = encodeURIComponent('Error en foto - Codigo ' + code);
+  var body = encodeURIComponent('Hola,\n\nError en foto:\nCodigo: ' + code + '\nDescripcion: ' + desc + '\n\nGracias.');
   window.location.href = 'mailto:christianr@fh.cl?subject=' + subject + '&body=' + body;
 }
 
@@ -276,7 +319,7 @@ window.addEventListener('popstate', function() {
     document.getElementById('search-input').value = code;
     doSearch();
   } else {
-    document.getElementById('results').innerHTML = '<div class="initial-state"><div class="emoji">🔍</div><p id="initial-msg">' + photosDB.length + ' fotos cargadas.<br>Ingresa un código para buscar.</p></div>';
+    document.getElementById('results').innerHTML = '<div class="initial-state"><div class="emoji">🔍</div><p id="initial-msg">' + photosDB.length + ' fotos cargadas. Ingresa un codigo para buscar.</p></div>';
   }
 });
 </script>
